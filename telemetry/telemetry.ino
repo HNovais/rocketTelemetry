@@ -13,7 +13,7 @@
 /*****************************************************************
  *           put your defines here                               *
  *****************************************************************/
-#define SAMPLING_INTERVAL 1000 * 6 * 10  // 5 min (300 seconds) sampling the altitude values
+#define SAMPLING_INTERVAL 1000 * 6  // 5 min (300 seconds) sampling the altitude values
 #define SAMPLING_PERIOD 15               // take and store a sample every x ms (this is the maximum sampling rate we can get according to BMP280 settings) \
                                          // at this rate we can get 66.6 samples/s , 4000 samples/min
 
@@ -81,12 +81,12 @@ bool Timer_bmp_sampling_Handler(struct repeating_timer *t);
 void setup() {
 
 #if (DEBUG > 0)
-  init_uart(115200);
+  init_uart(9600);
 #endif
   init_gpio();
   init_timer();
-  init_lora();
   init_bpm280();
+  init_lora();
 }
 
 /*****************************************************************
@@ -133,16 +133,6 @@ void loop() {
 
       DEBUG_PRINT_LN("Sending via LoRa: ");
       DEBUG_PRINT_LN(message);
-    }
-
-    if (Serial.available() > 0) {
-      char incomingChar = Serial.read();
-      inputString += incomingChar;
-
-      if (inputString.endsWith("STOP")) {
-        DEBUG_PRINT_LN("Received STOP message. Stopping sampling...");
-        break;
-      }
     }
   }
 
@@ -206,11 +196,11 @@ bool Timer_bpm280sampling_Handler(struct repeating_timer *t) {
  *****************************************************************/
 #if (DEBUG > 0)
 void init_uart(int baudrate) {
-
+/*
   // store 1 byte from uart...
   int incomingByte = 0;
 
-  Serial.begin(115200);
+  Serial.begin(9600);
   delay(1000);
 
   // wait for receiving a byte from uart
@@ -221,7 +211,7 @@ void init_uart(int baudrate) {
   // wait for the "Enter" key
   while (!(incomingByte == '\n'))
     ;
-
+*/
   // print some info to the uart
   DEBUG_PRINT_LN("\nStarting the Altimeter Project...");
 }
@@ -231,25 +221,6 @@ void init_uart(int baudrate) {
  *            init_gpio() code                                   *
  *****************************************************************/
 void init_gpio(void) {
-  // buffer to store incoming characters
-  String inputString = "";
-
-  Serial.begin(115200);
-  delay(1000);
-
-  // wait for receiving the word "START" from uart
-  while (true) {
-    if (Serial.available() > 0) {
-      char incomingChar = Serial.read();
-      inputString += incomingChar;
-
-      // check if the buffer contains the word "START"
-      if (inputString.endsWith("START")) {
-        break;
-      }
-    }
-  }
-
   pinMode(LED_BUILTIN, OUTPUT);  // led pin output
   pinMode(BUZZER_PIN, OUTPUT);   // buzzer pin output
 
@@ -308,6 +279,9 @@ void init_lora(void) {
       ;
   }
   DEBUG_PRINT_LN("LoRa: Initialization OK...");
+
+  Serial.begin(9600);
+  delay(1000);
 }
 
 /*****************************************************************

@@ -4,23 +4,36 @@ from tkinter import ttk
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import threading
+import os
 
 # Serial port configuration (adjust according to your setup)
 SERIAL_PORT = "COM5"  # Replace with your LoRa receiver's serial port
 BAUD_RATE = 9600      # Match the baud rate of your LoRa transmitter
+
+# Log file configuration
+LOG_FILE = "data.csv"
 
 # Global variables for data
 altitudes = []
 temperatures = []
 timestamps = []
 
+with open(LOG_FILE, "w") as f:
+    f.write("Sample,Timestamp,Temperature,Altitude\n")
+
+# Open the serial port once at the beginning
+try:
+    ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
+    print(f"Serial port {SERIAL_PORT} opened successfully.")
+except serial.SerialException as e:
+    print(f"Error opening serial port: {e}")
+    ser = None
+
 # Function to read serial data
 def read_serial_data():
     global altitudes, temperatures, timestamps
-    try:
-        ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
-    except serial.SerialException as e:
-        print(f"Error opening serial port: {e}")
+    if not ser or not ser.is_open:
+        print("Serial port not open.")
         return
     
     while True:
@@ -28,6 +41,7 @@ def read_serial_data():
             try:
                 line = ser.readline().decode('utf-8').strip()
                 print(f"Received line: {line}")  # Debug print
+                
                 # Assuming the format is: "sample_number,timestamp,temperature,altitude"
                 parts = line.split(',')
                 if len(parts) == 4:
@@ -35,6 +49,10 @@ def read_serial_data():
                     altitudes.append(float(altitude))
                     temperatures.append(float(temperature))
                     timestamps.append(float(timestamp))
+
+                    with open(LOG_FILE, "a") as f:
+                        f.write(f"{sample},{timestamp},{temperature},{altitude}\n")
+
                     if len(altitudes) > 100:  # Keep only the last 100 samples
                         altitudes.pop(0)
                         temperatures.pop(0)
@@ -71,13 +89,13 @@ def update_plot():
     # Schedule the next update
     root.after(1000, update_plot)
 
+# Create the main window
+root = tk.Tk()
+root.title("Rocket Data Visualization")
+
 # Start the serial reader in a separate thread
 thread = threading.Thread(target=read_serial_data, daemon=True)
 thread.start()
-
-# Create the GUI
-root = tk.Tk()
-root.title("LoRa Data Monitor")
 
 # Create a Matplotlib figure
 fig = Figure(figsize=(8, 6), dpi=100)

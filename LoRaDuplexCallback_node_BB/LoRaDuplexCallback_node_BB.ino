@@ -46,17 +46,6 @@ void setup() {
   Serial.begin(9600);                   // initialize serial
   while (!Serial);
 
-  // wait for receiving a byte from uart
-  //while(!Serial.available() > 0);
-  //incomingByte = Serial.read();
-
-  //Serial.println("PRESS ENTER!");
-
-  // wait for the "Enter" key
-  //while(!(incomingByte == '\n'));
-
-  //Serial.println("LoRa Duplex with callback");
-
   // override the default CS, reset, and IRQ pins (optional)
   LoRa.setPins(csPin, resetPin, irqPin);// set CS, reset, IRQ pin
 
@@ -72,9 +61,6 @@ void setup() {
 
 void loop() {
   if (millis() - lastSendTime > interval) {
-    //String message = "HeLoRa World FROM 0xBB!";   // send a message
-    //sendMessage(message);
-    //Serial.println("Sending " + message);
     lastSendTime = millis();            // timestamp the message
     //interval = random(2000) + 1000;     // 2-3 seconds
     LoRa.receive();                     // go back into receive mode
