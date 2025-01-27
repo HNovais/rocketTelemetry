@@ -13,7 +13,7 @@
 /*****************************************************************
  *           put your defines here                               *
  *****************************************************************/
-#define SAMPLING_INTERVAL 1000 * 6  // 5 min (300 seconds) sampling the altitude values
+#define SAMPLING_INTERVAL 1000 * 6    // 5 min (300 seconds) sampling the altitude values
 #define SAMPLING_PERIOD 15               // take and store a sample every x ms (this is the maximum sampling rate we can get according to BMP280 settings) \
                                          // at this rate we can get 66.6 samples/s , 4000 samples/min
 
@@ -98,6 +98,10 @@ void loop() {
   int sample = 0;
   String inputString = "";
 
+  // Variables for altitude and rate of climb/descent
+  float lastAltitude = 0.0;  // Store the previous altitude
+  float rateOfClimb = 0.0;   // Vertical velocity in meters per second
+
   // code for the setup before launch
   DEBUG_PRINT("Current time: ");
   DEBUG_PRINT_LN(millis());
@@ -123,11 +127,21 @@ void loop() {
 
       // Read BMP280 sensor data
       float temperature = bmp280.readTemperature();
+      float pressure = bmp280.readPressure();
       float altitude = bmp280.readAltitude(SEALEVELPRESSURE_HPA);
 
-      // Create a message with the data
-      String message = String(sample++) + "," + String(millis()) + "," + String(temperature) + "," + String(altitude);
+      // Calculate rate of climb/descent (vertical velocity)
+      unsigned long currentTime = millis();
+      if (sample > 0) {  // Only calculate rate of climb after the first sample
+        float deltaTime = (currentTime - (time_now + (sample - 1) * SAMPLING_PERIOD)) / 1000.0;  // Time difference in seconds
+        rateOfClimb = (altitude - lastAltitude) / deltaTime;  // Vertical velocity in m/s
+      }
 
+      lastAltitude = altitude;
+
+      // Create a message with the data
+      String message = String(sample++) + "," + String(currentTime) + "," + String(temperature) + "," + String(pressure) + "," + String(altitude) + "," + String(rateOfClimb);
+      
       // Send data via LoRa
       sendMessage(message);
 

@@ -1,5 +1,4 @@
 import tkinter as tk
-from tkinter import ttk
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import csv
@@ -10,27 +9,31 @@ LOG_FILE = "data.csv"
 # Lists to store data
 altitudes = []
 temperatures = []
+pressures = []
+rates = []
 timestamps = []
 
 # Read the log file and extract data
 def read_log_file():
-    global altitudes, temperatures, timestamps
+    global altitudes, temperatures, timestamps, pressures, rates
     try:
         with open(LOG_FILE, "r") as f:
             reader = csv.reader(f)
             next(reader)  # Skip header row
             for row in reader:
-                if len(row) == 4:
-                    sample, timestamp, temperature, altitude = row
-                    timestamps.append(float(timestamp))
+                if len(row) == 6:
+                    sample, timestamp, temperature, pressure, altitude, rateOfClimb = row
+                    timestamps.append(float(timestamp) / 1000)
                     temperatures.append(float(temperature))
+                    pressures.append(float(pressure))
                     altitudes.append(float(altitude))
+                    rates.append(float(rateOfClimb))
     except Exception as e:
         print(f"Error reading log file: {e}")
 
 # Function to update the GUI plots
 def update_plot():
-    global altitudes, temperatures, timestamps
+    global altitudes, temperatures, timestamps, pressures, rates
     if timestamps:
         # Update altitude plot
         ax1.clear()
@@ -48,6 +51,22 @@ def update_plot():
         ax2.set_ylabel("Temperature (°C)")
         ax2.legend()
 
+        # Update pressure plot
+        ax3.clear()
+        ax3.plot(timestamps, pressures, label="Pressure (hPa)", color="green")
+        ax3.set_title("Pressure")
+        ax3.set_xlabel("Time (ms)")
+        ax3.set_ylabel("Pressure (hPa)")
+        ax3.legend()
+
+        # Update rate of climb plot
+        ax4.clear()
+        ax4.plot(timestamps, rates, label="Rate of Climb (m/s)", color="purple")
+        ax4.set_title("Rate of Climb")
+        ax4.set_xlabel("Time (ms)")
+        ax4.set_ylabel("Rate of Climb (m/s)")
+        ax4.legend()
+
         # Refresh the canvas
         canvas.draw()
 
@@ -59,9 +78,13 @@ root.title("Rocket Data Visualization - Log File")
 read_log_file()
 
 # Create a Matplotlib figure
-fig = Figure(figsize=(8, 6), dpi=100)
-ax1 = fig.add_subplot(211)  # Altitude subplot
-ax2 = fig.add_subplot(212)  # Temperature subplot
+fig = Figure(figsize=(10, 10), dpi=100)
+
+# Create subplots
+ax1 = fig.add_subplot(411)  # Altitude subplot
+ax2 = fig.add_subplot(412)  # Temperature subplot
+ax3 = fig.add_subplot(413)  # Pressure subplot
+ax4 = fig.add_subplot(414)  # Rate of Climb subplot
 
 # Embed the Matplotlib figure into the Tkinter GUI
 canvas = FigureCanvasTkAgg(fig, master=root)
